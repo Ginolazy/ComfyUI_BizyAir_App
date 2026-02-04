@@ -18,6 +18,11 @@ from PIL import Image
 from server import PromptServer
 import comfy.model_management
 from .utility.type_utility import any_type
+from .bizyair_license_utils import LicenseManager
+
+# Initialize License Manager
+# Initialize LicenseManager (will now default to ~/.bizyair_app_config)
+license_manager = LicenseManager()
 
 # Get BizyAir official plugin path
 BIZYAIR_PATH = os.path.join(folder_paths.get_folder_paths("custom_nodes")[0], "BizyAir")
@@ -41,6 +46,33 @@ async def get_bizyair_api_key(request):
         return web.json_response({"api_key": api_key})
     except Exception as e:
         print(f"[BizyAirWebApp] Error in /bizyair_webapp/get_api_key: {e}")
+        return web.json_response({"error": str(e)}, status=500)
+
+@PromptServer.instance.routes.get("/bizyair_webapp/license_info")
+async def get_license_info(request):
+    try:
+        is_activated = license_manager.is_activated()
+        machine_id = license_manager.get_machine_id()
+        allowed, msg = license_manager.check_daily_limit()
+        return web.json_response({
+            "is_activated": is_activated,
+            "machine_id": machine_id,
+            "status_msg": msg,
+            "allowed": allowed
+        })
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+@PromptServer.instance.routes.post("/bizyair_webapp/activate")
+async def activate_license(request):
+    try:
+        data = await request.json()
+        key = data.get("key")
+        if license_manager.activate(key):
+            return web.json_response({"success": True, "message": "Activation successful!"})
+        else:
+            return web.json_response({"success": False, "message": "Invalid license key."})
+    except Exception as e:
         return web.json_response({"error": str(e)}, status=500)
 
 @PromptServer.instance.routes.get("/bizyair_webapp/default_app_list")
@@ -115,6 +147,23 @@ class BizyAirWebApp:
                 "status": status_str,
                 "msg": log_msg or status_str
             })
+
+    def _is_pro_feature(self, web_app_id):
+        try:
+            config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "default_apps.json")
+            if os.path.exists(config_path):
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    apps = data.get("default_apps", {})
+                    # Check video and audio categories for pro features
+                    for cat in ["video", "audio"]:
+                        if cat in apps:
+                            for app in apps[cat]:
+                                if str(app.get("id")) == str(web_app_id):
+                                    return True
+        except:
+            pass
+        return False
 
     def _extract_error(self, data):
         # 1. Top-level 'error'
@@ -235,6 +284,21 @@ class BizyAirWebApp:
         web_app_id = input_values.get("web_app_id")
         if not web_app_id: raise Exception("Missing web_app_id. Please refresh the node.")
         
+        # --- LICENSE CHECK START ---
+        # 1. Check if it is a PRO feature
+        if self._is_pro_feature(web_app_id):
+            if not license_manager.is_activated():
+                raise Exception("🔒 This is a Pro feature (Video/Audio). Please buy a license key to unlock.")
+        
+        # 2. Check Usage Limit
+        allowed, msg = license_manager.check_daily_limit()
+        if not allowed:
+            raise Exception(f"🔒 {msg}")
+            
+        # 3. Increment usage (will verify activation internally)
+        license_manager.increment_usage()
+        # --- LICENSE CHECK END ---
+
         # 2. Update Progress: Starting
         self._send_progress(unique_id, 0.0, "Starting...")
 
