@@ -148,21 +148,24 @@ class BizyAirWebApp:
                 "msg": log_msg or status_str
             })
 
-    def _is_pro_feature(self, web_app_id):
-        try:
-            config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "default_apps.json")
-            if os.path.exists(config_path):
-                with open(config_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    apps = data.get("default_apps", {})
-                    # Check video and audio categories for pro features
-                    for cat in ["video", "audio"]:
-                        if cat in apps:
-                            for app in apps[cat]:
-                                if str(app.get("id")) == str(web_app_id):
-                                    return True
-        except:
-            pass
+    def _check_is_pro(self, data, web_app_name):
+        """
+        Determines if the app is a Pro feature based on:
+        1. Whether input_nodes contain loadvideo or loadaudio.
+        2. Whether app name contains video/video/audio/音频.
+        """
+        # 1. Check Keywords in Name (Output logic)
+        name_lower = (web_app_name or "").lower()
+        if any(kw in name_lower for kw in ["video", "视频", "audio", "音频"]):
+            return True
+
+        # 2. Check Input Node Types (Input logic)
+        input_nodes = data.get("input_nodes", [])
+        for node in input_nodes:
+            node_type = (node.get("node_type") or "").lower()
+            if "loadvideo" in node_type or "loadaudio" in node_type:
+                return True
+        
         return False
 
     def _extract_error(self, data):
@@ -283,20 +286,37 @@ class BizyAirWebApp:
 
         web_app_id = input_values.get("web_app_id")
         if not web_app_id: raise Exception("Missing web_app_id. Please refresh the node.")
-        
+
         # --- LICENSE CHECK START ---
-        # 1. Check if it is a PRO feature
-        if self._is_pro_feature(web_app_id):
+        # Fetch app detail from cache or remote (needed for pro detection)
+        # We assume the metadata is inside input_values_json for efficiency, 
+        # or we fetch briefly if not present.
+        is_pro = False
+        try:
+            # Re-fetch app info from bizyair to verify type
+            response_app = requests.get(f"https://api.bizyair.cn/x/v1/webapp/{web_app_id}", headers={"Authorization": f"Bearer {api_key}"})
+            if response_app.status_code == 200:
+                app_data = response_app.json().get("data", {})
+                is_pro = self._check_is_pro(app_data, app_data.get("name"))
+        except:
+            # Fallback: if fetch fails, default to conservative check
+            pass
+
+        if is_pro:
+            # 1. Check if Activated for Pro features
             if not license_manager.is_activated():
-                raise Exception("🔒 This is a Pro feature (Video/Audio). Please buy a license key to unlock.")
-        
-        # 2. Check Usage Limit
-        allowed, msg = license_manager.check_daily_limit()
-        if not allowed:
-            raise Exception(f"🔒 {msg}")
+                raise Exception("🔒 此功能涉及音视频处理 (Pro)。请联系作者激活授权以解锁。")
             
-        # 3. Increment usage (will verify activation internally)
-        license_manager.increment_usage()
+            # 2. Check Usage Limit for Pro
+            allowed, msg = license_manager.check_daily_limit()
+            if not allowed:
+                raise Exception(f"🔒 {msg}")
+                
+            # 3. Increment usage
+            license_manager.increment_usage()
+        else:
+            # Image apps are FREE and unlimited
+            pass
         # --- LICENSE CHECK END ---
 
         # 2. Update Progress: Starting
