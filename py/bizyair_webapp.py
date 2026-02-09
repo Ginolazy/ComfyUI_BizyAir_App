@@ -18,11 +18,6 @@ from PIL import Image
 from server import PromptServer
 import comfy.model_management
 from .utility.type_utility import any_type
-from .bizyair_license_utils import LicenseManager
-
-# Initialize License Manager
-# Initialize LicenseManager (will now default to ~/.bizyair_app_config)
-license_manager = LicenseManager()
 
 # Get BizyAir official plugin path
 BIZYAIR_PATH = os.path.join(folder_paths.get_folder_paths("custom_nodes")[0], "BizyAir")
@@ -46,33 +41,6 @@ async def get_bizyair_api_key(request):
         return web.json_response({"api_key": api_key})
     except Exception as e:
         print(f"[BizyAirWebApp] Error in /bizyair_webapp/get_api_key: {e}")
-        return web.json_response({"error": str(e)}, status=500)
-
-@PromptServer.instance.routes.get("/bizyair_webapp/license_info")
-async def get_license_info(request):
-    try:
-        is_activated = license_manager.is_activated()
-        machine_id = license_manager.get_machine_id()
-        allowed, msg = license_manager.check_daily_limit()
-        return web.json_response({
-            "is_activated": is_activated,
-            "machine_id": machine_id,
-            "status_msg": msg,
-            "allowed": allowed
-        })
-    except Exception as e:
-        return web.json_response({"error": str(e)}, status=500)
-
-@PromptServer.instance.routes.post("/bizyair_webapp/activate")
-async def activate_license(request):
-    try:
-        data = await request.json()
-        key = data.get("key")
-        if license_manager.activate(key):
-            return web.json_response({"success": True, "message": "Activation successful!"})
-        else:
-            return web.json_response({"success": False, "message": "Invalid license key."})
-    except Exception as e:
         return web.json_response({"error": str(e)}, status=500)
 
 @PromptServer.instance.routes.get("/bizyair_webapp/default_app_list")
@@ -147,26 +115,6 @@ class BizyAirWebApp:
                 "status": status_str,
                 "msg": log_msg or status_str
             })
-
-    def _check_is_pro(self, data, web_app_name):
-        """
-        Determines if the app is a Pro feature based on:
-        1. Whether input_nodes contain loadvideo or loadaudio.
-        2. Whether app name contains video/video/audio/音频.
-        """
-        # 1. Check Keywords in Name (Output logic)
-        name_lower = (web_app_name or "").lower()
-        if any(kw in name_lower for kw in ["video", "视频", "audio", "音频"]):
-            return True
-
-        # 2. Check Input Node Types (Input logic)
-        input_nodes = data.get("input_nodes", [])
-        for node in input_nodes:
-            node_type = (node.get("node_type") or "").lower()
-            if "loadvideo" in node_type or "loadaudio" in node_type:
-                return True
-        
-        return False
 
     def _extract_error(self, data):
         # 1. Top-level 'error'
@@ -286,39 +234,7 @@ class BizyAirWebApp:
 
         web_app_id = input_values.get("web_app_id")
         if not web_app_id: raise Exception("Missing web_app_id. Please refresh the node.")
-
-        # --- LICENSE CHECK START ---
-        # Fetch app detail from cache or remote (needed for pro detection)
-        # We assume the metadata is inside input_values_json for efficiency, 
-        # or we fetch briefly if not present.
-        is_pro = False
-        try:
-            # Re-fetch app info from bizyair to verify type
-            response_app = requests.get(f"https://api.bizyair.cn/x/v1/webapp/{web_app_id}", headers={"Authorization": f"Bearer {api_key}"})
-            if response_app.status_code == 200:
-                app_data = response_app.json().get("data", {})
-                is_pro = self._check_is_pro(app_data, app_data.get("name"))
-        except:
-            # Fallback: if fetch fails, default to conservative check
-            pass
-
-        if is_pro:
-            # 1. Check if Activated for Pro features
-            if not license_manager.is_activated():
-                raise Exception("🔒 此功能涉及音视频处理 (Pro)。请联系作者激活授权以解锁。")
-            
-            # 2. Check Usage Limit for Pro
-            allowed, msg = license_manager.check_daily_limit()
-            if not allowed:
-                raise Exception(f"🔒 {msg}")
-                
-            # 3. Increment usage
-            license_manager.increment_usage()
-        else:
-            # Image apps are FREE and unlimited
-            pass
-        # --- LICENSE CHECK END ---
-
+        
         # 2. Update Progress: Starting
         self._send_progress(unique_id, 0.0, "Starting...")
 

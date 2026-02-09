@@ -20,7 +20,7 @@ A standalone ComfyUI node for running BizyAir Web Apps.
     pip install -r requirements.txt
     ```
 
-**Note:** Before use, please install the official Bizyair plugin (https://github.com/siliconflow/BizyAir). ☁️BizyAir WebApp will automatically sync the API key from the official Bizyair plugin, no further configuration is needed..
+**Note:** Before use, please install the official Bizyair plugin (https://github.com/siliconflow/BizyAir). ☁️BizyAir WebApp will automatically sync the API key from the official Bizyair plugin.
 
 ### Usage
 - Add the `☁️BizyAir WebApp` node to your workflow.
@@ -41,15 +41,6 @@ If the App requires a mask input, simply use the native ComfyUI `Join Image with
 - Incremental App List Sync
 - Dynamic Widget Generation
 - Support for Image, Video, and Audio inputs/outputs
-
-### License & Usage
-- **Image Features**: ✨ **Completely Free & Unlimited**.
-- **Audio & Video (Pro)**: Nodes with **(Pro)** suffix are subject to a **free trial limit of 5 runs per day** (resets at UTC 0).
-- **Dual Licensing**: Your [BizyAir API Key](https://bizyair.cn) pays for cloud compute. **This plugin's Pro license does NOT include cloud credits**; it is separate and only required for advanced audio/video features provided by this node.
-- **Get Pro License**: For unlimited Pro runs, please contact:
-  - **Email**: ginolazy@gmail.com
-  - **WeChat**: Ginolazy
-- **How to Activate**: Right-click the `☁️BizyAir WebApp` node -> `🔑 Activate License`.
 
 ![](images/04.webp)
 
@@ -73,7 +64,7 @@ If the App requires a mask input, simply use the native ComfyUI `Join Image with
     pip install -r requirements.txt
     ```
 
-**注意：** 在使用前，请确保已安装官方 Bizyair 插件 (https://github.com/siliconflow/BizyAir)。BizyAir_WebApp 会自动从官方插件中同步 API Key，无需再另外配置。
+**注意：** 在使用前，请确保已安装官方 Bizyair 插件 (https://github.com/siliconflow/BizyAir)。BizyAir_WebApp 会自动从官方插件中同步 API Key。
 
 ### 使用说明
 - 在工作流中添加 `☁️BizyAir WebApp` 节点。
@@ -94,14 +85,5 @@ If the App requires a mask input, simply use the native ComfyUI `Join Image with
 - 增量 App 列表同步
 - 动态组件生成
 - 支持图片、视频和音频的输入/输出处理
-
-### 授权与使用规则
-- **图像相关功能**: ✨ **完全免费，不限次数**。
-- **音视频功能 (Pro)**: 带有 **(Pro)** 标识的节点每日提供 **5 次免费额度**（每日 UTC 0 点重置）。
-- **双重授权逻辑**: 您自己的 [BizyAir API Key](https://bizyair.cn) 负责支付云端算力；本插件的授权仅用于解锁音视频 Pro 模块的增强功能，**授权不包含任何云端点数/额度**。
-- **获取 Pro 授权**: 如需无限次 Pro 调用，请联系作者：
-  - **电子邮件**: ginolazy@gmail.com
-  - **微信 (WeChat)**: Ginolazy
-- **激活方式**: 右键点击 `☁️BizyAir WebApp` 节点 -> 选择 `🔑 Activate License` 即可输入 Key。
 
 ![](images/04.webp)
