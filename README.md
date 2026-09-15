@@ -1,8 +1,11 @@
 **⚠️ No Longer Maintained**
 
-ComfyUI_BizyAir_App has been integrated into **ComfyPanel** and is no longer maintained as a separate project.
+ComfyUI_BizyAir_App was originally a standalone ComfyUI node for connecting ComfyUI with BizyAir.
+
+It has now been integrated into **ComfyPanel Custom Nodes** as the **☁️BizyAir App** and is no longer maintained as a separate project.
 
 Please use [ComfyPanel](https://github.com/Ginolazy/ComfyPanel) for the latest version and future updates.
+
 
 
 
