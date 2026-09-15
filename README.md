@@ -1,3 +1,11 @@
+**⚠️ No Longer Maintained**
+
+ComfyUI_BizyAir_App has been integrated into **ComfyPanel** and is no longer maintained as a separate project.
+
+Please use [ComfyPanel](https://github.com/Ginolazy/ComfyPanel) for the latest version and future updates.
+
+
+
 # ComfyUI ☁️BizyAir WebApp
 
 [English](#english) | [中文](#chinese)
